@@ -1,0 +1,1009 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Carlo Castro | Data Analyst</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
+  <script src="https://unpkg.com/react@18.3.1/umd/react.development.js" integrity="sha384-hD6/rw4ppMLGNu3tX5cjIb+uRZ7UkRJ6BPkLpg4hAu/6onKUg4lLsHAs9EBPT82L" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/react-dom@18.3.1/umd/react-dom.development.js" integrity="sha384-u6aeetuaXnQ38mYT8rp6sbXaQe3NL9t+IBXmnYxwkUI2Hw4bsp2Wvmx4yRQF1uAm" crossorigin="anonymous"></script>
+  <script src="https://unpkg.com/@babel/standalone@7.29.0/babel.min.js" integrity="sha384-m08KidiNqLdpJqLq95G/LEi8Qvjl/xUYll3QILypMoQ65QorJ9Lvtp2RXYGBFj1y" crossorigin="anonymous"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg: #0D0D14;
+      --bg2: #111118;
+      --surface: rgba(255,255,255,0.04);
+      --border: rgba(255,255,255,0.07);
+      --accent: #7C3AED;
+      --accent-light: #9D6EFF;
+      --accent-glow: rgba(124,58,237,0.35);
+      --text: #F0EFF8;
+      --muted: #8B8A9B;
+      --muted2: #55546A;
+    }
+
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: 'Inter', sans-serif;
+      -webkit-font-smoothing: antialiased;
+      overflow-x: hidden;
+    }
+
+    /* Dot grid texture */
+    body::before {
+      content: '';
+      position: fixed;
+      inset: 0;
+      background-image: radial-gradient(circle, rgba(255,255,255,0.06) 1px, transparent 1px);
+      background-size: 28px 28px;
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    /* Ambient blobs */
+    body::after {
+      content: '';
+      position: fixed;
+      top: -200px;
+      left: -200px;
+      width: 700px;
+      height: 700px;
+      background: radial-gradient(circle, rgba(124,58,237,0.12) 0%, transparent 70%);
+      pointer-events: none;
+      z-index: 0;
+    }
+
+    #root { position: relative; z-index: 1; }
+
+    /* Fade-in animation */
+    @keyframes fadeUp {
+      from { opacity: 0; transform: translateY(28px); }
+      to   { opacity: 1; transform: translateY(0); }
+    }
+    .fade-up { opacity: 0; }
+    .fade-up.visible { animation: fadeUp 0.7s cubic-bezier(0.22,1,0.36,1) forwards; }
+
+    @keyframes fadeIn {
+      from { opacity: 0; }
+      to   { opacity: 1; }
+    }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: var(--accent); border-radius: 3px; }
+
+    /* Selection */
+    ::selection { background: var(--accent); color: #fff; }
+  </style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/babel">
+const { useState, useEffect, useRef } = React;
+
+/* ── Utility: Intersection Observer hook ── */
+function useFadeUp(threshold = 0.15) {
+  const ref = useRef(null);
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    const obs = new IntersectionObserver(
+      ([entry]) => { if (entry.isIntersecting) { el.classList.add('visible'); obs.disconnect(); } },
+      { threshold }
+    );
+    obs.observe(el);
+    return () => obs.disconnect();
+  }, []);
+  return ref;
+}
+
+/* ── SVG Icons ── */
+const GitHubIcon = ({ size = 20 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
+    <path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z" />
+  </svg>
+);
+
+const LinkedInIcon = ({ size = 20 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
+    <path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433a2.062 2.062 0 0 1-2.063-2.065 2.064 2.064 0 1 1 2.063 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z" />
+  </svg>
+);
+
+const ExternalIcon = ({ size = 14 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6" />
+    <polyline points="15 3 21 3 21 9" />
+    <line x1="10" y1="14" x2="21" y2="3" />
+  </svg>
+);
+
+const MailIcon = ({ size = 20 }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <rect x="2" y="4" width="20" height="16" rx="2" />
+    <path d="m22 7-8.97 5.7a1.94 1.94 0 0 1-2.06 0L2 7" />
+  </svg>
+);
+
+const ChevronIcon = () => (
+  <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+    <polyline points="6 9 12 15 18 9" />
+  </svg>
+);
+
+const MtnIcon = () => (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <path d="m8 3 4 8 5-5 5 15H2L8 3z"/>
+  </svg>
+);
+
+const VolleyIcon = () => (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="12" cy="12" r="10"/>
+    <path d="M12 2a14.5 14.5 0 0 0 0 20"/>
+    <path d="M2 12h20"/>
+    <path d="M12 2C6.5 8 6.5 16 12 22"/>
+  </svg>
+);
+
+const ClimbIcon = () => (
+  <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+    <path d="M4 20 L10 8 L14 14 L17 10 L20 20"/>
+    <circle cx="17" cy="7" r="2"/>
+  </svg>
+);
+
+/* ── Desk Illustration SVG ── */
+const DeskIllustration = () => (
+  <svg viewBox="0 0 520 440" fill="none" xmlns="http://www.w3.org/2000/svg" style={{width:'100%', maxWidth: 480}}>
+    {/* Background ambient glow */}
+    <ellipse cx="260" cy="380" rx="200" ry="30" fill="rgba(124,58,237,0.08)" />
+
+    {/* Chair back */}
+    <rect x="195" y="245" width="80" height="110" rx="12" fill="#1A1A28" stroke="#2A2A3E" strokeWidth="1.5"/>
+    <rect x="203" y="253" width="64" height="94" rx="8" fill="#141421" />
+
+    {/* Chair seat */}
+    <rect x="185" y="345" width="100" height="18" rx="9" fill="#1A1A28" stroke="#2A2A3E" strokeWidth="1.5"/>
+
+    {/* Chair legs */}
+    <rect x="200" y="363" width="8" height="40" rx="4" fill="#1A1A28"/>
+    <rect x="262" y="363" width="8" height="40" rx="4" fill="#1A1A28"/>
+    <rect x="188" y="393" width="94" height="6" rx="3" fill="#141421"/>
+
+    {/* Person body */}
+    <rect x="212" y="258" width="46" height="60" rx="10" fill="#1E1E30"/>
+    {/* Shirt detail */}
+    <rect x="221" y="268" width="28" height="3" rx="1.5" fill="#7C3AED" opacity="0.6"/>
+    <rect x="221" y="275" width="20" height="2" rx="1" fill="#7C3AED" opacity="0.3"/>
+
+    {/* Person arms */}
+    <path d="M212 280 Q195 295 190 320" stroke="#2A2A3E" strokeWidth="10" strokeLinecap="round" fill="none"/>
+    <path d="M258 280 Q272 295 278 318" stroke="#2A2A3E" strokeWidth="10" strokeLinecap="round" fill="none"/>
+
+    {/* Hands */}
+    <ellipse cx="190" cy="322" rx="8" ry="6" fill="#2E2E45"/>
+    <ellipse cx="278" cy="320" rx="8" ry="6" fill="#2E2E45"/>
+
+    {/* Head */}
+    <ellipse cx="235" cy="245" rx="26" ry="28" fill="#2E2E45"/>
+    {/* Hair */}
+    <path d="M210 235 Q212 210 235 208 Q258 210 260 235 Q250 220 235 220 Q220 220 210 235Z" fill="#1A1A28"/>
+    {/* Face features */}
+    <ellipse cx="227" cy="245" rx="3" ry="3.5" fill="#1A1A28" opacity="0.6"/>
+    <ellipse cx="243" cy="245" rx="3" ry="3.5" fill="#1A1A28" opacity="0.6"/>
+    <path d="M228 256 Q235 261 242 256" stroke="#1A1A28" strokeWidth="1.5" strokeLinecap="round" fill="none" opacity="0.5"/>
+
+    {/* Desk surface */}
+    <rect x="100" y="315" width="320" height="12" rx="6" fill="#16162A" stroke="#252538" strokeWidth="1.5"/>
+    {/* Desk legs */}
+    <rect x="120" y="327" width="10" height="70" rx="5" fill="#13132A"/>
+    <rect x="390" y="327" width="10" height="70" rx="5" fill="#13132A"/>
+    <rect x="113" y="390" width="24" height="7" rx="3.5" fill="#0F0F1E"/>
+    <rect x="383" y="390" width="24" height="7" rx="3.5" fill="#0F0F1E"/>
+
+    {/* Laptop base */}
+    <rect x="168" y="295" width="184" height="22" rx="4" fill="#0F0F1E" stroke="#252538" strokeWidth="1.5"/>
+
+    {/* Laptop screen frame */}
+    <rect x="162" y="170" width="196" height="130" rx="8" fill="#0A0A12" stroke="#252538" strokeWidth="2"/>
+    {/* Screen inner */}
+    <rect x="170" y="178" width="180" height="114" rx="4" fill="#0D0D1A"/>
+
+    {/* Dashboard content on screen */}
+    {/* Top bar */}
+    <rect x="174" y="182" width="172" height="14" rx="2" fill="#111125"/>
+    <circle cx="180" cy="189" r="3" fill="#7C3AED" opacity="0.8"/>
+    <rect x="188" y="186" width="40" height="5" rx="2" fill="#252540" opacity="0.8"/>
+    <rect x="316" y="186" width="22" height="5" rx="2" fill="#7C3AED" opacity="0.3"/>
+
+    {/* Chart area */}
+    <rect x="174" y="200" width="80" height="50" rx="3" fill="#111125"/>
+    {/* Bar chart bars */}
+    <rect x="180" y="228" width="8" height="18" rx="2" fill="#7C3AED" opacity="0.4"/>
+    <rect x="192" y="220" width="8" height="26" rx="2" fill="#7C3AED" opacity="0.6"/>
+    <rect x="204" y="215" width="8" height="31" rx="2" fill="#7C3AED" opacity="0.9"/>
+    <rect x="216" y="222" width="8" height="24" rx="2" fill="#7C3AED" opacity="0.6"/>
+    <rect x="228" y="210" width="8" height="36" rx="2" fill="#9D6EFF"/>
+    <rect x="240" y="218" width="8" height="28" rx="2" fill="#7C3AED" opacity="0.7"/>
+
+    {/* Line chart area */}
+    <rect x="260" y="200" width="86" height="50" rx="3" fill="#111125"/>
+    <polyline points="266,240 276,228 286,232 296,220 306,222 316,212 326,218 336,208" stroke="#7C3AED" strokeWidth="1.5" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+    <polyline points="266,240 276,228 286,232 296,220 306,222 316,212 326,218 336,208 336,248 266,248" fill="rgba(124,58,237,0.12)"/>
+
+    {/* Stat cards row */}
+    <rect x="174" y="256" width="50" height="28" rx="3" fill="#111125"/>
+    <rect x="230" y="256" width="50" height="28" rx="3" fill="#111125"/>
+    <rect x="286" y="256" width="50" height="28" rx="3" fill="#111125"/>
+
+    <rect x="178" y="260" width="20" height="3" rx="1" fill="#2E2E50"/>
+    <rect x="178" y="266" width="32" height="5" rx="1" fill="#9D6EFF" opacity="0.8"/>
+    <rect x="178" y="274" width="15" height="3" rx="1" fill="#3C3C60" opacity="0.6"/>
+
+    <rect x="234" y="260" width="20" height="3" rx="1" fill="#2E2E50"/>
+    <rect x="234" y="266" width="28" height="5" rx="1" fill="#7C3AED" opacity="0.7"/>
+    <rect x="234" y="274" width="12" height="3" rx="1" fill="#3C3C60" opacity="0.6"/>
+
+    <rect x="290" y="260" width="20" height="3" rx="1" fill="#2E2E50"/>
+    <rect x="290" y="266" width="35" height="5" rx="1" fill="#9D6EFF" opacity="0.6"/>
+    <rect x="290" y="274" width="18" height="3" rx="1" fill="#3C3C60" opacity="0.6"/>
+
+    {/* Screen glow */}
+    <rect x="162" y="170" width="196" height="130" rx="8" fill="none" style={{filter: 'drop-shadow(0 0 18px rgba(124,58,237,0.25))'}}/>
+
+    {/* Hinge */}
+    <rect x="162" y="296" width="196" height="4" rx="2" fill="#181828"/>
+
+    {/* Coffee mug */}
+    <rect x="370" y="288" width="22" height="26" rx="4" fill="#1A1A28" stroke="#252538" strokeWidth="1.5"/>
+    <path d="M392 298 Q402 298 402 308 Q402 318 392 318" stroke="#252538" strokeWidth="2" strokeLinecap="round" fill="none"/>
+    <rect x="374" y="289" width="14" height="6" rx="2" fill="#7C3AED" opacity="0.35"/>
+    {/* Steam */}
+    <path d="M376 283 Q378 278 376 273" stroke="#252538" strokeWidth="1.5" strokeLinecap="round" fill="none" opacity="0.5"/>
+    <path d="M381 281 Q383 276 381 271" stroke="#252538" strokeWidth="1.5" strokeLinecap="round" fill="none" opacity="0.4"/>
+
+    {/* Notebook */}
+    <rect x="120" y="293" width="42" height="24" rx="3" fill="#1A1A28" stroke="#252538" strokeWidth="1.5" transform="rotate(-5 120 293)"/>
+    <rect x="124" y="298" width="28" height="2" rx="1" fill="#252540" transform="rotate(-5 124 298)"/>
+    <rect x="124" y="303" width="22" height="2" rx="1" fill="#252540" transform="rotate(-5 124 303)"/>
+    <rect x="124" y="308" width="25" height="2" rx="1" fill="#252540" transform="rotate(-5 124 308)"/>
+    <rect x="120" y="293" width="5" height="24" rx="2" fill="#7C3AED" opacity="0.5" transform="rotate(-5 120 293)"/>
+
+    {/* Floating data particles */}
+    <circle cx="95" cy="220" r="3" fill="#7C3AED" opacity="0.5"/>
+    <circle cx="425" cy="195" r="2" fill="#9D6EFF" opacity="0.4"/>
+    <circle cx="80" cy="280" r="1.5" fill="#7C3AED" opacity="0.3"/>
+    <circle cx="440" cy="260" r="2.5" fill="#9D6EFF" opacity="0.3"/>
+    <circle cx="110" cy="170" r="2" fill="#7C3AED" opacity="0.25"/>
+    <circle cx="415" cy="155" r="1.5" fill="#9D6EFF" opacity="0.3"/>
+
+    {/* Connecting dotted lines (data network feel) */}
+    <line x1="95" y1="220" x2="162" y2="220" stroke="#7C3AED" strokeWidth="1" strokeDasharray="3,4" opacity="0.2"/>
+    <line x1="425" y1="195" x2="358" y2="210" stroke="#7C3AED" strokeWidth="1" strokeDasharray="3,4" opacity="0.2"/>
+  </svg>
+);
+
+/* ── NAV ── */
+function Nav({ activeSection }) {
+  const [scrolled, setScrolled] = useState(false);
+
+  useEffect(() => {
+    const onScroll = () => setScrolled(window.scrollY > 40);
+    window.addEventListener('scroll', onScroll);
+    return () => window.removeEventListener('scroll', onScroll);
+  }, []);
+
+  const links = ['about', 'projects', 'contact'];
+
+  const navStyle = {
+    position: 'fixed',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 100,
+    transition: 'background 0.3s, backdrop-filter 0.3s, border-color 0.3s, box-shadow 0.3s',
+    background: scrolled ? 'rgba(13,13,20,0.85)' : 'transparent',
+    backdropFilter: scrolled ? 'blur(20px)' : 'none',
+    borderBottom: scrolled ? '1px solid rgba(255,255,255,0.06)' : '1px solid transparent',
+    boxShadow: scrolled ? '0 4px 30px rgba(0,0,0,0.3)' : 'none',
+  };
+
+  return (
+    <nav style={navStyle}>
+      <div style={{maxWidth: 1160, margin: '0 auto', padding: '0 32px', height: 68, display: 'flex', alignItems: 'center', justifyContent: 'space-between'}}>
+        {/* Monogram */}
+        <a href="#home" style={{textDecoration: 'none'}}>
+          <div style={{width: 38, height: 38, borderRadius: 10, background: 'linear-gradient(135deg, #7C3AED, #9D6EFF)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 15, fontWeight: 800, color: '#fff', letterSpacing: '-0.5px', boxShadow: '0 0 16px rgba(124,58,237,0.4)'}}>
+            CC
+          </div>
+        </a>
+
+        {/* Links */}
+        <div style={{display: 'flex', alignItems: 'center', gap: 8}}>
+          {links.map(link => (
+            <a key={link} href={`#${link}`} style={{
+              textDecoration: 'none',
+              padding: '7px 16px',
+              borderRadius: 8,
+              fontSize: 14,
+              fontWeight: 500,
+              letterSpacing: '-0.01em',
+              color: activeSection === link ? '#fff' : 'var(--muted)',
+              background: activeSection === link ? 'rgba(124,58,237,0.18)' : 'transparent',
+              transition: 'all 0.2s',
+            }}>
+              {link.charAt(0).toUpperCase() + link.slice(1)}
+            </a>
+          ))}
+          <a href="#" onClick={e => e.preventDefault()} style={{
+            marginLeft: 8,
+            textDecoration: 'none',
+            padding: '7px 18px',
+            borderRadius: 8,
+            fontSize: 14,
+            fontWeight: 600,
+            color: '#fff',
+            background: 'linear-gradient(135deg, #7C3AED, #6D28D9)',
+            boxShadow: '0 0 20px rgba(124,58,237,0.3)',
+            transition: 'all 0.2s',
+            letterSpacing: '-0.01em',
+          }}>
+            Resume
+          </a>
+        </div>
+      </div>
+    </nav>
+  );
+}
+
+/* ── HERO ── */
+function Hero() {
+  const [typed, setTyped] = useState('');
+  const words = ["Data Analyst", "ML Engineer", "Startup Builder"];
+  const wordRef = useRef(0);
+  const charRef = useRef(0);
+  const deletingRef = useRef(false);
+
+  useEffect(() => {
+    let timeout;
+    const tick = () => {
+      const word = words[wordRef.current];
+      if (!deletingRef.current) {
+        if (charRef.current < word.length) {
+          charRef.current++;
+          setTyped(word.slice(0, charRef.current));
+          timeout = setTimeout(tick, 75);
+        } else {
+          timeout = setTimeout(() => { deletingRef.current = true; tick(); }, 2200);
+        }
+      } else {
+        if (charRef.current > 0) {
+          charRef.current--;
+          setTyped(word.slice(0, charRef.current));
+          timeout = setTimeout(tick, 42);
+        } else {
+          deletingRef.current = false;
+          wordRef.current = (wordRef.current + 1) % words.length;
+          timeout = setTimeout(tick, 300);
+        }
+      }
+    };
+    timeout = setTimeout(tick, 900);
+    return () => clearTimeout(timeout);
+  }, []);
+
+  return (
+    <section id="home" style={{minHeight: '100vh', display: 'flex', alignItems: 'center', padding: '100px 32px 60px', maxWidth: 1160, margin: '0 auto'}}>
+      <div style={{display: 'flex', alignItems: 'center', gap: 60, width: '100%', flexWrap: 'wrap'}}>
+        {/* Left text */}
+        <div style={{flex: '1 1 340px', animation: 'fadeUp 0.9s cubic-bezier(0.22,1,0.36,1) 0.1s both'}}>
+          <h1 style={{fontSize: 'clamp(40px, 5vw, 62px)', fontWeight: 900, letterSpacing: '-0.04em', lineHeight: 1.05, marginBottom: 16}}>
+            Hey, I'm{' '}
+            <span style={{background: 'linear-gradient(135deg, #7C3AED, #9D6EFF, #C4B5FD)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent', backgroundClip: 'text'}}>
+              Carlo.
+            </span>
+          </h1>
+
+          <div style={{fontSize: 'clamp(20px, 2.5vw, 28px)', fontWeight: 700, letterSpacing: '-0.03em', color: 'var(--text)', marginBottom: 20, height: 40, display: 'flex', alignItems: 'center', gap: 2}}>
+            <span>{typed}</span>
+            <span style={{display: 'inline-block', width: 2, height: '1.1em', background: '#7C3AED', borderRadius: 1, animation: 'blink 1s step-end infinite', verticalAlign: 'middle', marginLeft: 2}}></span>
+          </div>
+
+          <p style={{fontSize: 17, color: 'var(--muted)', lineHeight: 1.75, maxWidth: 480, marginBottom: 36, fontWeight: 400}}>
+            Turning messy data into decisions, and building AI tools that quietly do the work no one wants to.
+          </p>
+
+          {/* Social row */}
+          <div style={{display: 'flex', alignItems: 'center', gap: 12, marginBottom: 36, flexWrap: 'wrap'}}>
+            <a href="https://github.com/carcastro-a11y" target="_blank" rel="noopener noreferrer" style={socialBtnStyle}>
+              <GitHubIcon size={18} />
+              <span>GitHub</span>
+            </a>
+            <a href="https://linkedin.com/in/carlocastro1" target="_blank" rel="noopener noreferrer" style={socialBtnStyle}>
+              <LinkedInIcon size={18} />
+              <span>LinkedIn</span>
+            </a>
+            <a href="mailto:carcastro@chapman.edu" style={{...socialBtnStyle, gap: 8}}>
+              <MailIcon size={18} />
+              <span>carcastro@chapman.edu</span>
+            </a>
+          </div>
+
+          {/* CTA buttons */}
+          <div style={{display: 'flex', gap: 14, flexWrap: 'wrap'}}>
+            <a href="#" onClick={e => e.preventDefault()} style={{
+              display: 'inline-flex', alignItems: 'center', gap: 8,
+              padding: '13px 28px', borderRadius: 12, fontSize: 15, fontWeight: 700,
+              letterSpacing: '-0.02em', textDecoration: 'none', color: '#fff',
+              background: 'linear-gradient(135deg, #7C3AED, #6D28D9)',
+              boxShadow: '0 0 30px rgba(124,58,237,0.45), 0 4px 15px rgba(0,0,0,0.3)',
+              transition: 'all 0.2s',
+            }}>
+              View Resume
+              <ExternalIcon size={15} />
+            </a>
+            <a href="#projects" style={{
+              display: 'inline-flex', alignItems: 'center', gap: 8,
+              padding: '13px 28px', borderRadius: 12, fontSize: 15, fontWeight: 600,
+              letterSpacing: '-0.02em', textDecoration: 'none', color: 'var(--muted)',
+              background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.09)',
+              transition: 'all 0.2s',
+            }}>
+              See my work
+              <ChevronIcon />
+            </a>
+          </div>
+        </div>
+
+        {/* Right illustration */}
+        <div style={{flex: '1 1 300px', display: 'flex', justifyContent: 'center', animation: 'fadeUp 0.9s cubic-bezier(0.22,1,0.36,1) 0.3s both', filter: 'drop-shadow(0 0 40px rgba(124,58,237,0.12))'}}>
+          <DeskIllustration />
+        </div>
+      </div>
+
+      <style>{`
+        @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.4} }
+        @keyframes blink { 0%,100%{opacity:1} 50%{opacity:0} }
+      `}</style>
+    </section>
+  );
+}
+
+const socialBtnStyle = {
+  display: 'inline-flex', alignItems: 'center', gap: 7,
+  padding: '9px 16px', borderRadius: 9, fontSize: 14, fontWeight: 500,
+  textDecoration: 'none', color: 'var(--muted)',
+  background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.08)',
+  transition: 'all 0.2s', letterSpacing: '-0.01em',
+};
+
+/* ── ABOUT / SKILLS ── */
+const skillGroups = [
+  { label: 'Languages & Databases', skills: ['Python', 'R', 'SQL'] },
+  { label: 'Analytics & ML', skills: ['Machine Learning', 'Deep Learning', 'Computer Vision', 'Statistical Modeling', 'Financial Modeling'] },
+  { label: 'Visualization & BI', skills: ['Tableau', 'Excel', 'PowerPoint', 'Visio'] },
+  { label: 'Cloud & Tools', skills: ['BigQuery', 'Gemini API', 'Oracle PeopleSoft', 'QuickBooks', 'Google Workspace'] },
+  { label: 'Certifications', skills: ['IIBA ECBA', 'Google Data Analytics Certificate'] },
+];
+
+function About() {
+  const ref = useFadeUp();
+
+  return (
+    <section id="about" style={{padding: '100px 32px', maxWidth: 1160, margin: '0 auto'}}>
+      <div ref={ref} className="fade-up">
+        <SectionLabel>About</SectionLabel>
+        <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: 60, marginTop: 48}}>
+          {/* Bio */}
+          <div>
+            {/* Headshot */}
+            <div style={{display: 'flex', alignItems: 'center', gap: 20, marginBottom: 32}}>
+              <div style={{position: 'relative', flexShrink: 0}}>
+                <div style={{
+                  width: 80, height: 80, borderRadius: '50%',
+                  background: 'linear-gradient(135deg, #7C3AED, #9D6EFF)',
+                  padding: 2.5,
+                  boxShadow: '0 0 24px rgba(124,58,237,0.5)',
+                }}>
+                  <img
+                    src="uploads/Carlo Headshot.jpeg"
+                    alt="Carlo Castro"
+                    style={{width: '100%', height: '100%', borderRadius: '50%', objectFit: 'cover', objectPosition: 'center top', display: 'block'}}
+                  />
+                </div>
+              </div>
+              <div>
+                <div style={{fontSize: 17, fontWeight: 700, letterSpacing: '-0.02em', color: '#fff'}}>Carlo Castro</div>
+                <div style={{fontSize: 13, color: 'var(--muted)', marginTop: 2}}>MS Business Analytics · Chapman University</div>
+                <div style={{display: 'flex', alignItems: 'center', gap: 6, marginTop: 6}}>
+                  <div style={{width: 6, height: 6, borderRadius: '50%', background: '#9D6EFF', boxShadow: '0 0 6px #9D6EFF', animation: 'pulse 2s infinite'}}></div>
+                  <span style={{fontSize: 12, color: 'var(--accent-light)', fontWeight: 500}}>Bay Area · Southern California</span>
+                </div>
+              </div>
+            </div>
+
+            <h2 style={{fontSize: 'clamp(28px, 3vw, 40px)', fontWeight: 800, letterSpacing: '-0.04em', lineHeight: 1.15, marginBottom: 24}}>
+              Data at the intersection of{' '}
+              <span style={{color: 'var(--accent-light)'}}>AI and business.</span>
+            </h2>
+            <p style={{fontSize: 16, color: 'var(--muted)', lineHeight: 1.85, marginBottom: 20}}>
+              I'm a graduate student at Chapman University pursuing an MS in Business Analytics (expected May 2026), building at the overlap of data science, machine learning, and real-world business impact.
+            </p>
+            <p style={{fontSize: 16, color: 'var(--muted)', lineHeight: 1.85, marginBottom: 20}}>
+              I've worked as an Asset & Portfolio Analyst Intern at Khuu Management, building financial dashboards across a commercial real estate portfolio, and as a Business Analyst Intern at Gray's Analysis Inc., focused on regulatory data workflows.
+            </p>
+            <p style={{fontSize: 16, color: 'var(--muted)', lineHeight: 1.85}}>
+              Currently I'm building <strong style={{color: 'var(--text)', fontWeight: 600}}>Dentiverify</strong>, an AI-driven startup automating insurance eligibility verification for healthcare providers, reducing manual overhead for dental practices across the US.
+            </p>
+
+            {/* Stat row */}
+            <div style={{display: 'flex', gap: 32, marginTop: 40, flexWrap: 'wrap'}}>
+              {[['MS', 'Business Analytics'], ['2+', 'Years Experience'], ['5+', 'Projects Shipped']].map(([num, lbl]) => (
+                <div key={lbl}>
+                  <div style={{fontSize: 30, fontWeight: 900, letterSpacing: '-0.05em', color: '#fff', lineHeight: 1}}>{num}</div>
+                  <div style={{fontSize: 12, color: 'var(--muted)', marginTop: 4, fontWeight: 500, letterSpacing: '0.04em', textTransform: 'uppercase'}}>{lbl}</div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Skills */}
+          <div style={{display: 'flex', flexDirection: 'column', gap: 28}}>
+            {skillGroups.map(group => (
+              <div key={group.label}>
+                <div style={{fontSize: 11, fontWeight: 700, letterSpacing: '0.1em', textTransform: 'uppercase', color: 'var(--muted2)', marginBottom: 10}}>{group.label}</div>
+                <div style={{display: 'flex', flexWrap: 'wrap', gap: 8}}>
+                  {group.skills.map(skill => (
+                    <span key={skill} style={{
+                      fontSize: 13, fontWeight: 500, padding: '5px 13px',
+                      borderRadius: 100, letterSpacing: '-0.01em',
+                      background: 'rgba(124,58,237,0.1)', border: '1px solid rgba(124,58,237,0.22)',
+                      color: '#C4B5FD', transition: 'all 0.2s',
+                    }}>
+                      {skill}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+const projects = [
+  {
+    id: 'dentiverify',
+    title: 'DentiVerify',
+    desc: 'AI startup automating dental insurance eligibility verification for healthcare providers. Reduces manual verification overhead, cutting administrative burden and accelerating patient intake workflows.',
+    tags: ['Python', 'AI Automation', 'Healthcare', 'SaaS'],
+    visitUrl: 'https://dentiverify-landing-page.vercel.app/DentiVerify.html',
+    githubUrl: 'https://github.com/carcastro-a11y',
+    featured: true,
+    chartType: 'funnel',
+  },
+  {
+    id: 'pcoa',
+    title: 'PCoA Movie Recommender',
+    desc: 'Mood-based film recommender across 8,000 films with 248 IDF-weighted trait features. Supports multi-rail content placement for streaming platforms.',
+    tags: ['Python', 'PCoA', 'Recommender Systems', 'NLP'],
+    visitUrl: 'https://movie-dashboard-xi.vercel.app/',
+    githubUrl: 'https://github.com/carcastro-a11y',
+    chartType: 'scatter',
+  },
+  {
+    id: 'swimming',
+    title: 'Swimming Video Analysis',
+    desc: 'AI-driven swim performance analytics platform predicting 100y breaststroke race times from video-extracted biomechanics using pose estimation and regression modeling.',
+    tags: ['Gemini API', 'BigQuery', 'Ridge Regression', 'Computer Vision'],
+    githubUrl: 'https://github.com/carcastro-a11y',
+    slideUrl: 'uploads/BUS 673 Final Presentation (1).pdf',
+    chartType: 'line',
+  },
+  {
+    id: 'peoplesoft',
+    title: 'PeopleSoft Enrollment Optimization',
+    desc: 'Filter priority queue system automating prerequisite and GPA validation in Oracle PeopleSoft. Saved 200+ advisor hours per semester for 8,000 students.',
+    tags: ['Oracle PeopleSoft', 'SQL', 'Process Automation'],
+    slideUrl: 'uploads/Final Presentation.pptx',
+    chartType: 'bar',
+  },
+];
+
+/* Placeholder thumbnail SVGs */
+const ThumbnailFunnel = () => (
+  <svg viewBox="0 0 360 180" fill="none" style={{width:'100%'}}>
+    <rect width="360" height="180" fill="#0A0A14"/>
+    <rect x="80" y="30" width="200" height="28" rx="5" fill="rgba(124,58,237,0.35)"/>
+    <rect x="100" y="70" width="160" height="24" rx="5" fill="rgba(124,58,237,0.5)"/>
+    <rect x="120" y="106" width="120" height="22" rx="5" fill="rgba(124,58,237,0.7)"/>
+    <rect x="140" y="138" width="80" height="18" rx="5" fill="#7C3AED"/>
+    <text x="180" y="173" textAnchor="middle" fontSize="10" fill="rgba(255,255,255,0.2)" fontFamily="monospace">eligibility verification funnel</text>
+  </svg>
+);
+
+const ThumbnailLine = () => (
+  <svg viewBox="0 0 360 180" fill="none" style={{width:'100%'}}>
+    <rect width="360" height="180" fill="#0A0A14"/>
+    <polyline points="30,140 80,110 130,120 180,80 230,90 280,50 330,60" stroke="#7C3AED" strokeWidth="2.5" fill="none" strokeLinecap="round" strokeLinejoin="round"/>
+    <polyline points="30,140 80,110 130,120 180,80 230,90 280,50 330,60 330,150 30,150" fill="rgba(124,58,237,0.1)"/>
+    {[30,80,130,180,230,280,330].map((x,i) => {
+      const ys = [140,110,120,80,90,50,60];
+      return <circle key={i} cx={x} cy={ys[i]} r="4" fill="#9D6EFF"/>;
+    })}
+    <text x="180" y="173" textAnchor="middle" fontSize="10" fill="rgba(255,255,255,0.2)" fontFamily="monospace">stroke time prediction curve</text>
+  </svg>
+);
+
+const ThumbnailScatter = () => (
+  <svg viewBox="0 0 360 180" fill="none" style={{width:'100%'}}>
+    <rect width="360" height="180" fill="#0A0A14"/>
+    {[[60,40],[100,80],[150,50],[200,100],[250,60],[300,90],[80,120],[170,130],[230,110],[120,30],[280,140],[320,70]].map(([cx,cy],i) => (
+      <circle key={i} cx={cx} cy={cy} r={4+Math.sin(i)*2} fill="#7C3AED" opacity={0.4+i*0.05} />
+    ))}
+    <text x="180" y="173" textAnchor="middle" fontSize="10" fill="rgba(255,255,255,0.2)" fontFamily="monospace">8,000-film feature space (PCoA)</text>
+  </svg>
+);
+
+const ThumbnailBar = () => (
+  <svg viewBox="0 0 360 180" fill="none" style={{width:'100%'}}>
+    <rect width="360" height="180" fill="#0A0A14"/>
+    {[60,110,90,140,75,120,85].map((h,i) => (
+      <rect key={i} x={28+i*44} y={155-h} width="28" height={h} rx="4" fill={i===3?"#9D6EFF":"rgba(124,58,237,0.55)"} />
+    ))}
+    <text x="180" y="175" textAnchor="middle" fontSize="10" fill="rgba(255,255,255,0.2)" fontFamily="monospace">advisor hours saved by cohort</text>
+  </svg>
+);
+
+const ThumbnailArea = () => (
+  <svg viewBox="0 0 360 180" fill="none" style={{width:'100%'}}>
+    <rect width="360" height="180" fill="#0A0A14"/>
+    <polyline points="30,120 90,100 150,80 210,60 270,75 330,45" stroke="#7C3AED" strokeWidth="2.5" fill="none" strokeLinecap="round"/>
+    <polyline points="30,120 90,100 150,80 210,60 270,75 330,45 330,150 30,150" fill="rgba(124,58,237,0.15)"/>
+    <polyline points="30,140 90,135 150,128 210,118 270,125 330,110" stroke="rgba(157,110,255,0.5)" strokeWidth="1.5" strokeDasharray="4,3" fill="none"/>
+    <text x="180" y="173" textAnchor="middle" fontSize="10" fill="rgba(255,255,255,0.2)" fontFamily="monospace">portfolio IRR &amp; cash-on-cash returns</text>
+  </svg>
+);
+
+const thumbnailMap = {
+  funnel: ThumbnailFunnel,
+  line: ThumbnailLine,
+  scatter: ThumbnailScatter,
+  bar: ThumbnailBar,
+  area: ThumbnailArea,
+};
+
+function ProjectCard({ project, delay = 0 }) {
+  const [hovered, setHovered] = useState(false);
+  const Thumb = thumbnailMap[project.chartType];
+
+  return (
+    <div
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+      style={{
+        borderRadius: 16,
+        background: hovered ? 'rgba(255,255,255,0.055)' : 'rgba(255,255,255,0.03)',
+        border: hovered ? '1px solid rgba(124,58,237,0.4)' : '1px solid rgba(255,255,255,0.07)',
+        overflow: 'hidden',
+        transition: 'all 0.3s cubic-bezier(0.22,1,0.36,1)',
+        transform: hovered ? 'translateY(-6px)' : 'translateY(0)',
+        boxShadow: hovered ? '0 20px 60px rgba(124,58,237,0.2), 0 0 0 0.5px rgba(124,58,237,0.3)' : '0 4px 20px rgba(0,0,0,0.2)',
+        display: 'flex',
+        flexDirection: 'column',
+        animation: `fadeUp 0.7s cubic-bezier(0.22,1,0.36,1) ${delay}s both`,
+      }}
+    >
+      {/* Thumbnail */}
+      <div style={{borderBottom: '1px solid rgba(255,255,255,0.06)', overflow: 'hidden', position: 'relative'}}>
+        <Thumb />
+        {project.featured && (
+          <div style={{position: 'absolute', top: 12, right: 12, background: 'rgba(124,58,237,0.9)', backdropFilter: 'blur(8px)', borderRadius: 6, padding: '3px 9px', fontSize: 11, fontWeight: 700, letterSpacing: '0.06em', color: '#fff', textTransform: 'uppercase'}}>
+            Featured
+          </div>
+        )}
+      </div>
+
+      {/* Content */}
+      <div style={{padding: '20px 22px 22px', flex: 1, display: 'flex', flexDirection: 'column', gap: 12}}>
+        <h3 style={{fontSize: 17, fontWeight: 700, letterSpacing: '-0.03em', color: '#fff', lineHeight: 1.2}}>{project.title}</h3>
+        <p style={{fontSize: 14, color: 'var(--muted)', lineHeight: 1.7, flex: 1}}>{project.desc}</p>
+
+        {/* Tags */}
+        <div style={{display: 'flex', flexWrap: 'wrap', gap: 6}}>
+          {project.tags.map(tag => (
+            <span key={tag} style={{fontSize: 12, fontWeight: 500, padding: '3px 10px', borderRadius: 100, background: 'rgba(124,58,237,0.1)', border: '1px solid rgba(124,58,237,0.2)', color: '#B197FC'}}>
+              {tag}
+            </span>
+          ))}
+        </div>
+
+        {/* Links */}
+        <div style={{display: 'flex', gap: 10, marginTop: 4, flexWrap: 'wrap'}}>
+          {project.visitUrl && (
+            <a href={project.visitUrl} target="_blank" rel="noopener noreferrer" style={{
+              display: 'inline-flex', alignItems: 'center', gap: 6,
+              fontSize: 13, fontWeight: 600, padding: '7px 16px', borderRadius: 8,
+              textDecoration: 'none', color: '#fff', letterSpacing: '-0.01em',
+              background: 'linear-gradient(135deg, #7C3AED, #6D28D9)',
+              boxShadow: '0 0 16px rgba(124,58,237,0.35)',
+            }}>
+              Visit Site <ExternalIcon size={12} />
+            </a>
+          )}
+          {project.slideUrl && (
+            <a href={project.slideUrl} target="_blank" rel="noopener noreferrer" style={{
+              display: 'inline-flex', alignItems: 'center', gap: 6,
+              fontSize: 13, fontWeight: 600, padding: '7px 16px', borderRadius: 8,
+              textDecoration: 'none', color: '#fff', letterSpacing: '-0.01em',
+              background: 'linear-gradient(135deg, #7C3AED, #6D28D9)',
+              boxShadow: '0 0 16px rgba(124,58,237,0.35)',
+            }}>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+              View Slide Deck
+            </a>
+          )}
+          {project.githubUrl && (
+            <a href={project.githubUrl} target="_blank" rel="noopener noreferrer" style={{
+              display: 'inline-flex', alignItems: 'center', gap: 6,
+              fontSize: 13, fontWeight: 500, padding: '7px 16px', borderRadius: 8,
+              textDecoration: 'none', color: 'var(--muted)', letterSpacing: '-0.01em',
+              background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.09)',
+            }}>
+              <GitHubIcon size={13} /> View Code
+            </a>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Projects() {
+  const ref = useFadeUp();
+
+  return (
+    <section id="projects" style={{padding: '100px 32px', maxWidth: 1160, margin: '0 auto'}}>
+      <div ref={ref} className="fade-up">
+        <SectionLabel>Projects</SectionLabel>
+        <div style={{marginTop: 12, marginBottom: 48}}>
+          <h2 style={{fontSize: 'clamp(28px, 3vw, 40px)', fontWeight: 800, letterSpacing: '-0.04em', lineHeight: 1.15}}>
+            Things I've built.
+          </h2>
+        </div>
+      </div>
+
+      <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 24}}>
+        {projects.map((proj, i) => (
+          <ProjectCard key={proj.id} project={proj} delay={i * 0.08} />
+        ))}
+      </div>
+    </section>
+  );
+}
+
+/* ── Email Copy Button ── */
+function EmailCopyButton() {
+  const [state, setState] = useState('idle'); // idle | copied
+
+  const handleClick = () => {
+    navigator.clipboard.writeText('carcastro@chapman.edu').then(() => {
+      setState('copied');
+      setTimeout(() => setState('idle'), 2000);
+    });
+  };
+
+  return (
+    <button onClick={handleClick} style={{
+      display: 'inline-flex', alignItems: 'center', gap: 12,
+      fontSize: 14, fontWeight: 500, padding: '11px 16px', borderRadius: 10,
+      background: state === 'copied' ? 'rgba(124,58,237,0.12)' : 'rgba(255,255,255,0.03)',
+      border: state === 'copied' ? '1px solid rgba(124,58,237,0.35)' : '1px solid rgba(255,255,255,0.07)',
+      color: state === 'copied' ? 'var(--accent-light)' : 'var(--muted)',
+      cursor: 'pointer', transition: 'all 0.25s', fontFamily: 'Inter, sans-serif',
+      width: '100%', textAlign: 'left',
+    }}>
+      <span style={{color: state === 'copied' ? 'var(--accent-light)' : 'var(--accent-light)', flexShrink: 0}}>
+        {state === 'copied'
+          ? <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><polyline points="20 6 9 17 4 12"/></svg>
+          : <MailIcon size={16} />}
+      </span>
+      {state === 'copied' ? 'Copied to clipboard!' : 'carcastro@chapman.edu'}
+    </button>
+  );
+}
+
+/* ── CONTACT ── */
+function Contact() {
+  const ref = useFadeUp();
+  const [form, setForm] = useState({ name: '', email: '', message: '' });
+  const [errors, setErrors] = useState({});
+  const [sent, setSent] = useState(false);
+
+  const validate = () => {
+    const e = {};
+    if (!form.name.trim()) e.name = 'Name is required';
+    if (!form.email.trim() || !/\S+@\S+\.\S+/.test(form.email)) e.email = 'Valid email required';
+    if (!form.message.trim()) e.message = 'Message is required';
+    return e;
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const e2 = validate();
+    if (Object.keys(e2).length) { setErrors(e2); return; }
+    setSent(true);
+  };
+
+  const inputStyle = (field) => ({
+    width: '100%', padding: '13px 16px', borderRadius: 10, fontSize: 15,
+    fontFamily: 'Inter, sans-serif', fontWeight: 400,
+    background: 'rgba(255,255,255,0.04)', border: `1px solid ${errors[field] ? '#EF4444' : 'rgba(255,255,255,0.1)'}`,
+    color: 'var(--text)', outline: 'none', transition: 'border 0.2s',
+    resize: 'none',
+  });
+
+  return (
+    <section id="contact" style={{padding: '100px 32px 60px', maxWidth: 1160, margin: '0 auto'}}>
+      <div ref={ref} className="fade-up">
+        <SectionLabel>Contact</SectionLabel>
+        <div style={{display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: 60, marginTop: 48}}>
+          {/* Left */}
+          <div>
+            <h2 style={{fontSize: 'clamp(28px, 3vw, 40px)', fontWeight: 800, letterSpacing: '-0.04em', lineHeight: 1.15, marginBottom: 20}}>
+              Let's work<br />
+              <span style={{color: 'var(--accent-light)'}}>together.</span>
+            </h2>
+            <p style={{fontSize: 16, color: 'var(--muted)', lineHeight: 1.75, maxWidth: 380, marginBottom: 36}}>
+              Open to summer 2026 internships and full-time analytics roles in the Bay Area or Southern California. Let's talk data, AI, or anything in between.
+            </p>
+
+            <div style={{display: 'flex', flexDirection: 'column', gap: 14}}>
+              <EmailCopyButton />
+            {[
+                { icon: <GitHubIcon size={16} />, label: 'github.com/carcastro-a11y', href: 'https://github.com/carcastro-a11y' },
+                { icon: <LinkedInIcon size={16} />, label: 'linkedin.com/in/carlocastro1', href: 'https://linkedin.com/in/carlocastro1' },
+              ].map(item => (
+                <a key={item.label} href={item.href} target="_blank" rel="noopener noreferrer" style={{
+                  display: 'inline-flex', alignItems: 'center', gap: 12,
+                  textDecoration: 'none', color: 'var(--muted)', fontSize: 14, fontWeight: 500,
+                  padding: '11px 16px', borderRadius: 10,
+                  background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)',
+                  transition: 'all 0.2s',
+                }}>
+                  <span style={{color: 'var(--accent-light)'}}>{item.icon}</span>
+                  {item.label}
+                </a>
+              ))}
+            </div>
+          </div>
+
+          {/* Form */}
+          <div style={{background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.08)', borderRadius: 20, padding: '32px 28px'}}>
+            {sent ? (
+              <div style={{textAlign: 'center', padding: '40px 0'}}>
+                <div style={{fontSize: 48, marginBottom: 16}}>✓</div>
+                <h3 style={{fontSize: 22, fontWeight: 700, letterSpacing: '-0.03em', marginBottom: 8}}>Message sent!</h3>
+                <p style={{color: 'var(--muted)', fontSize: 15}}>Thanks for reaching out. I'll get back to you soon.</p>
+              </div>
+            ) : (
+              <form onSubmit={handleSubmit} style={{display: 'flex', flexDirection: 'column', gap: 18}}>
+                <div>
+                  <label style={{fontSize: 12, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--muted2)', display: 'block', marginBottom: 7}}>Name</label>
+                  <input style={inputStyle('name')} value={form.name} onChange={e => setForm({...form, name: e.target.value})} placeholder="Your name" />
+                  {errors.name && <div style={{fontSize: 12, color: '#EF4444', marginTop: 5}}>{errors.name}</div>}
+                </div>
+                <div>
+                  <label style={{fontSize: 12, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--muted2)', display: 'block', marginBottom: 7}}>Email</label>
+                  <input style={inputStyle('email')} type="email" value={form.email} onChange={e => setForm({...form, email: e.target.value})} placeholder="your@email.com" />
+                  {errors.email && <div style={{fontSize: 12, color: '#EF4444', marginTop: 5}}>{errors.email}</div>}
+                </div>
+                <div>
+                  <label style={{fontSize: 12, fontWeight: 600, letterSpacing: '0.06em', textTransform: 'uppercase', color: 'var(--muted2)', display: 'block', marginBottom: 7}}>Message</label>
+                  <textarea style={{...inputStyle('message'), minHeight: 120}} value={form.message} onChange={e => setForm({...form, message: e.target.value})} placeholder="What's on your mind?" />
+                  {errors.message && <div style={{fontSize: 12, color: '#EF4444', marginTop: 5}}>{errors.message}</div>}
+                </div>
+                <button type="submit" style={{
+                  padding: '13px 0', borderRadius: 10, fontSize: 15, fontWeight: 700,
+                  letterSpacing: '-0.02em', border: 'none', cursor: 'pointer', color: '#fff',
+                  background: 'linear-gradient(135deg, #7C3AED, #6D28D9)',
+                  boxShadow: '0 0 24px rgba(124,58,237,0.4)',
+                  transition: 'all 0.2s',
+                }}>
+                  Send Message
+                </button>
+              </form>
+            )}
+          </div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ── FOOTER ── */
+function Footer() {
+  return (
+    <footer style={{borderTop: '1px solid rgba(255,255,255,0.06)', padding: '36px 32px', maxWidth: 1160, margin: '0 auto'}}>
+      <div style={{display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 24}}>
+        <div style={{fontSize: 13, color: 'var(--muted2)'}}>
+          © 2026 Carlo Castro · Chapman University MS Business Analytics
+        </div>
+
+        {/* Outside of work */}
+        <div style={{display: 'flex', alignItems: 'center', gap: 6}}>
+          <span style={{fontSize: 12, color: 'var(--muted2)', marginRight: 10, letterSpacing: '0.04em', textTransform: 'uppercase', fontWeight: 500}}>Outside of work</span>
+          {[
+            { icon: <ClimbIcon />, label: 'Rock climbing' },
+            { icon: <VolleyIcon />, label: 'Volleyball' },
+            { icon: <MtnIcon />, label: 'Hiking' },
+          ].map(item => (
+            <div key={item.label} title={item.label} style={{
+              width: 36, height: 36, borderRadius: 9, display: 'flex', alignItems: 'center', justifyContent: 'center',
+              background: 'rgba(255,255,255,0.04)', border: '1px solid rgba(255,255,255,0.07)',
+              color: 'var(--muted)', cursor: 'default',
+            }}>
+              {item.icon}
+            </div>
+          ))}
+        </div>
+      </div>
+    </footer>
+  );
+}
+
+/* ── Section label ── */
+const SectionLabel = ({ children }) => (
+  <div style={{display: 'inline-flex', alignItems: 'center', gap: 10, marginBottom: 12}}>
+    <div style={{width: 20, height: 2, background: 'var(--accent)', borderRadius: 1}}></div>
+    <span style={{fontSize: 12, fontWeight: 700, letterSpacing: '0.12em', textTransform: 'uppercase', color: 'var(--accent-light)'}}>{children}</span>
+  </div>
+);
+
+/* ── APP ── */
+function App() {
+  const [activeSection, setActiveSection] = useState('home');
+
+  useEffect(() => {
+    const sections = ['home', 'about', 'projects', 'contact'];
+    const obs = new IntersectionObserver(entries => {
+      entries.forEach(e => { if (e.isIntersecting) setActiveSection(e.target.id); });
+    }, { threshold: 0.3 });
+    sections.forEach(id => { const el = document.getElementById(id); if (el) obs.observe(el); });
+    return () => obs.disconnect();
+  }, []);
+
+  return (
+    <>
+      <Nav activeSection={activeSection} />
+      <Hero />
+      <div style={{height: 1, background: 'linear-gradient(90deg, transparent, rgba(124,58,237,0.2), transparent)', maxWidth: 1160, margin: '0 auto 0'}} />
+      <About />
+      <div style={{height: 1, background: 'linear-gradient(90deg, transparent, rgba(124,58,237,0.15), transparent)', maxWidth: 1160, margin: '0 auto'}} />
+      <Projects />
+      <div style={{height: 1, background: 'linear-gradient(90deg, transparent, rgba(124,58,237,0.15), transparent)', maxWidth: 1160, margin: '0 auto'}} />
+      <Contact />
+      <Footer />
+
+      {/* Second ambient glow, bottom right */}
+      <div style={{position: 'fixed', bottom: -100, right: -100, width: 500, height: 500, background: 'radial-gradient(circle, rgba(124,58,237,0.07) 0%, transparent 70%)', pointerEvents: 'none', zIndex: 0}} />
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+</body>
+</html>
